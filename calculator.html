@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0D0D14;
+      --card:      #16161F;
+      --display:   #1C1C28;
+      --btn-num:   #1E1E2E;
+      --btn-num-h: #28283C;
+      --btn-fn:    #252535;
+      --btn-fn-h:  #303048;
+      --btn-op:    #C84B31;
+      --btn-op-h:  #E05A3A;
+      --btn-eq:    #E8823A;
+      --btn-eq-h:  #F0924A;
+      --text:      #F0EEF8;
+      --text-dim:  #6B6B88;
+      --expr:      #9898B8;
+      --shadow:    0 32px 64px rgba(0,0,0,0.6);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(200,75,49,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(232,130,58,0.06) 0%, transparent 60%);
+    }
+
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+
+    .calc {
+      background: var(--card);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
+      width: 340px;
+    }
+
+    /* ── Display ── */
+    .display {
+      background: var(--display);
+      border-radius: 16px;
+      padding: 20px 24px 18px;
+      margin-bottom: 20px;
+      min-height: 110px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .expr {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--expr);
+      min-height: 18px;
+      word-break: break-all;
+      text-align: right;
+      transition: opacity 0.15s;
+    }
+
+    .number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 42px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+      word-break: break-all;
+      text-align: right;
+      transition: font-size 0.1s;
+    }
+
+    .number.small  { font-size: 30px; }
+    .number.xsmall { font-size: 22px; }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    /* ── Buttons ── */
+    button {
+      border: none;
+      border-radius: 14px;
+      height: 68px;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s, box-shadow 0.12s;
+      outline: none;
+      position: relative;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active { transform: scale(0.93); }
+
+    /* Number buttons */
+    .btn-num {
+      background: var(--btn-num);
+      color: var(--text);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .btn-num:hover { background: var(--btn-num-h); }
+
+    /* Function buttons (AC, +/−, %) */
+    .btn-fn {
+      background: var(--btn-fn);
+      color: #BBBBDD;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .btn-fn:hover { background: var(--btn-fn-h); }
+
+    /* Operator buttons */
+    .btn-op {
+      background: var(--btn-op);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(200,75,49,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+    .btn-op:hover  { background: var(--btn-op-h); }
+    .btn-op.active {
+      background: #fff;
+      color: var(--btn-op);
+    }
+
+    /* Equals button */
+    .btn-eq {
+      background: linear-gradient(135deg, var(--btn-eq), #C84B31);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(232,130,58,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .btn-eq:hover { background: linear-gradient(135deg, var(--btn-eq-h), #E05A3A); }
+
+    /* Zero button spans 2 columns */
+    .span2 {
+      grid-column: span 2;
+      text-align: left;
+      padding-left: 26px;
+    }
+
+    /* Ripple flash on result */
+    @keyframes flash {
+      0%   { background: rgba(232,130,58,0.2); }
+      100% { background: transparent; }
+    }
+    .display.flash { animation: flash 0.3s ease-out; }
+
+    /* Keyboard focus ring */
+    button:focus-visible {
+      box-shadow: 0 0 0 3px rgba(232,130,58,0.6);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      button { transition: none; }
+    }
+
+    /* Responsive */
+    @media (max-width: 380px) {
+      .calc { width: 96vw; padding: 16px; }
+      button { height: 58px; font-size: 16px; }
+      .number { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+
+  <p class="label">Calculator</p>
+
+  <div class="calc">
+    <div class="display" id="display">
+      <div class="expr"   id="expr"></div>
+      <div class="number" id="screen">0</div>
+    </div>
+
+    <div class="grid">
+      <!-- Row 1 -->
+      <button class="btn-fn"  data-action="clear">AC</button>
+      <button class="btn-fn"  data-action="sign">+/−</button>
+      <button class="btn-fn"  data-action="percent">%</button>
+      <button class="btn-op"  data-action="op" data-val="÷">÷</button>
+
+      <!-- Row 2 -->
+      <button class="btn-num" data-action="digit" data-val="7">7</button>
+      <button class="btn-num" data-action="digit" data-val="8">8</button>
+      <button class="btn-num" data-action="digit" data-val="9">9</button>
+      <button class="btn-op"  data-action="op" data-val="×">×</button>
+
+      <!-- Row 3 -->
+      <button class="btn-num" data-action="digit" data-val="4">4</button>
+      <button class="btn-num" data-action="digit" data-val="5">5</button>
+      <button class="btn-num" data-action="digit" data-val="6">6</button>
+      <button class="btn-op"  data-action="op" data-val="−">−</button>
+
+      <!-- Row 4 -->
+      <button class="btn-num" data-action="digit" data-val="1">1</button>
+      <button class="btn-num" data-action="digit" data-val="2">2</button>
+      <button class="btn-num" data-action="digit" data-val="3">3</button>
+      <button class="btn-op"  data-action="op" data-val="+">+</button>
+
+      <!-- Row 5 -->
+      <button class="btn-num span2" data-action="digit" data-val="0">0</button>
+      <button class="btn-num" data-action="decimal">.</button>
+      <button class="btn-eq"  data-action="equals">=</button>
+    </div>
+  </div>
+
+<script>
+  // ── State ──
+  let current   = '0';
+  let prev      = '';
+  let operator  = null;
+  let justEqual = false;
+  let fresh     = false;  // next digit replaces current
+
+  const screen  = document.getElementById('screen');
+  const exprEl  = document.getElementById('expr');
+  const display = document.getElementById('display');
+
+  // ── Helpers ──
+  function fmt(n) {
+    const s = String(n);
+    if (s.includes('e')) return s;          // scientific notation passthrough
+    const [int, dec] = s.split('.');
+    const formatted = Number(int).toLocaleString('en-US');
+    return dec !== undefined ? formatted + '.' + dec : formatted;
+  }
+
+  function render() {
+    const len = current.replace(/[,.\-]/g,'').length;
+    screen.className = 'number' + (len > 12 ? ' xsmall' : len > 9 ? ' small' : '');
+    screen.textContent = fmt(current);
+  }
+
+  function flashDisplay() {
+    display.classList.remove('flash');
+    void display.offsetWidth;
+    display.classList.add('flash');
+    setTimeout(() => display.classList.remove('flash'), 300);
+  }
+
+  function highlightOp(op) {
+    document.querySelectorAll('.btn-op').forEach(b => {
+      b.classList.toggle('active', b.dataset.val === op);
+    });
+  }
+
+  function clearHighlight() { highlightOp(null); }
+
+  // ── Actions ──
+  function onDigit(v) {
+    clearHighlight();
+    if (justEqual) { current = v; justEqual = false; fresh = false; }
+    else if (fresh) { current = v; fresh = false; }
+    else { current = current === '0' ? v : current.length < 15 ? current + v : current; }
+    render();
+  }
+
+  function onDecimal() {
+    clearHighlight();
+    if (justEqual || fresh) { current = '0.'; justEqual = false; fresh = false; }
+    else if (!current.includes('.')) current += '.';
+    render();
+  }
+
+  function onClear() {
+    current = '0'; prev = ''; operator = null;
+    justEqual = false; fresh = false;
+    exprEl.textContent = '';
+    clearHighlight();
+    render();
+  }
+
+  function onSign() {
+    if (current === '0') return;
+    current = String(-parseFloat(current));
+    render();
+  }
+
+  function onPercent() {
+    current = String(parseFloat(current) / 100);
+    render();
+  }
+
+  function onOp(op) {
+    if (operator && !fresh) {
+      compute(false);  // chain: evaluate first
+    }
+    prev     = current;
+    operator = op;
+    fresh    = true;
+    justEqual = false;
+    exprEl.textContent = fmt(prev) + ' ' + op;
+    highlightOp(op);
+    render();
+  }
+
+  function compute(fromEquals) {
+    if (!operator || !prev) return;
+    const a = parseFloat(prev.replace(/,/g,''));
+    const b = parseFloat(current.replace(/,/g,''));
+    let result;
+    switch (operator) {
+      case '+': result = a + b; break;
+      case '−': result = a - b; break;
+      case '×': result = a * b; break;
+      case '÷': result = b === 0 ? 'Error' : a / b; break;
+    }
+
+    if (fromEquals) {
+      exprEl.textContent = fmt(prev) + ' ' + operator + ' ' + fmt(current) + ' =';
+      operator  = null;
+      fresh     = false;
+      justEqual = true;
+    }
+
+    current = result === 'Error' ? 'Error' : String(parseFloat(result.toFixed(10)));
+    prev    = '';
+    clearHighlight();
+    flashDisplay();
+    render();
+  }
+
+  // ── Event delegation ──
+  document.querySelector('.grid').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const { action, val } = btn.dataset;
+    switch (action) {
+      case 'digit':   onDigit(val);   break;
+      case 'decimal': onDecimal();    break;
+      case 'clear':   onClear();      break;
+      case 'sign':    onSign();       break;
+      case 'percent': onPercent();    break;
+      case 'op':      onOp(val);      break;
+      case 'equals':  compute(true);  break;
+    }
+  });
+
+  // ── Keyboard support ──
+  const keyMap = {
+    '0':'digit:0','1':'digit:1','2':'digit:2','3':'digit:3','4':'digit:4',
+    '5':'digit:5','6':'digit:6','7':'digit:7','8':'digit:8','9':'digit:9',
+    '.':'decimal',',':'decimal',
+    '+':'op:+','-':'op:−','*':'op:×','/':'op:÷',
+    'Enter':'equals','=':'equals',
+    'Backspace':'backspace','Escape':'clear','%':'percent'
+  };
+
+  document.addEventListener('keydown', e => {
+    const mapped = keyMap[e.key];
+    if (!mapped) return;
+    e.preventDefault();
+
+    if (mapped === 'backspace') {
+      if (justEqual || fresh) return;
+      current = current.length > 1 ? current.slice(0,-1) : '0';
+      render(); return;
+    }
+
+    const [act, v] = mapped.split(':');
+    switch (act) {
+      case 'digit':   onDigit(v);   break;
+      case 'decimal': onDecimal();  break;
+      case 'clear':   onClear();    break;
+      case 'percent': onPercent();  break;
+      case 'op':      onOp(v);      break;
+      case 'equals':  compute(true); break;
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>
