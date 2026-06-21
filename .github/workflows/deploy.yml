@@ -15,7 +15,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
       - name: Invalidate CloudFront
-        run: aws cloudfront create-invalidation --distribution-id YOUR-CF-ID --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id E33SMZFCP0FT97 --paths "/*"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
